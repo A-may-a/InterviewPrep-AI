@@ -70,6 +70,15 @@ export const quizAPI = {
     }),
 
   getHistory: () => api.get("/quiz/history"),
+
+  getAvailableTests: () =>
+    api.get("/quiz/aptitude/tests"),
+  
+  getAptitudeTest: (testId) =>
+    api.get(`/quiz/aptitude/test/${testId}`),
+
+  submitAptitudeQuiz: (answers) =>
+    api.post("/quizzes/aptitude/submit", answers),
 };
 
 // ================= DSA =================

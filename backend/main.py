@@ -10,12 +10,12 @@ import uuid
 from pathlib import Path
 from sqlalchemy.orm import Session
 
-from database import engine, SessionLocal, Base, get_db
-from models import (
+from backend.database import engine, SessionLocal, Base, get_db
+from backend.models import (
     User, AptitudeQuestion, DSAProblem, QuizSession,
     MockInterview, Resume, InterviewQuestion, Progress
 )
-from schemas import (
+from backend.schemas import (
     UserRegister, UserLogin, TokenResponse, UserResponse,
     AptitudeQuestionResponse, AptitudeQuestionWithAnswer,
     DSAProblemResponse, DSAProblemWithSolution,
@@ -24,12 +24,12 @@ from schemas import (
     DashboardStatsResponse, ProgressResponse,
     QuizAnswerSubmit
 )
-from auth import (
+from backend.auth import (
     hash_password, verify_password,
     create_access_token, verify_token,
     get_current_user, SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES
 )
-from ai_service import AIService
+from backend.ai_service import AIService
 
 # Create tables
 Base.metadata.create_all(bind=engine)
@@ -234,7 +234,62 @@ def get_quiz_history(
         }
         for s in sessions
     ]
+# Add this to backend/main.py after other aptitude endpoints
 
+@app.get("/quiz/aptitude/tests")
+def get_available_tests(db: Session = Depends(get_db)):
+    """Get all available aptitude tests"""
+    total_questions = db.query(AptitudeQuestion).count()
+    questions_per_test = 10
+    num_tests = (total_questions + questions_per_test - 1) // questions_per_test
+    
+    tests = []
+    for i in range(1, num_tests + 1):
+        start_idx = (i - 1) * questions_per_test
+        end_idx = start_idx + questions_per_test
+        
+        test_questions = db.query(AptitudeQuestion).limit(
+            questions_per_test
+        ).offset(start_idx).count()
+        
+        tests.append({
+            "test_id": i,
+            "test_name": f"Aptitude Test {i}",
+            "total_questions": test_questions,
+            "duration_minutes": 10,
+            "questions_per_test": test_questions
+        })
+    
+    return tests
+
+@app.get("/quiz/aptitude/test/{test_id}")
+def get_aptitude_test(test_id: int, db: Session = Depends(get_db)):
+    """Get specific aptitude test questions"""
+    questions_per_test = 10
+    start_idx = (test_id - 1) * questions_per_test
+    
+    questions = db.query(AptitudeQuestion).limit(
+        questions_per_test
+    ).offset(start_idx).all()
+    
+    if not questions:
+        raise HTTPException(status_code=404, detail="Test not found")
+    
+    return {
+        "test_id": test_id,
+        "test_name": f"Aptitude Test {test_id}",
+        "duration_minutes": 10,
+        "total_questions": len(questions),
+        "questions": [
+            {
+                "id": q.id,
+                "text": q.text,
+                "options": q.options,
+                "category": q.category,
+                "difficulty": q.difficulty
+            } for q in questions
+        ]
+    }
 
 # ==================== DSA ROUTES ====================
 @app.get("/dsa")

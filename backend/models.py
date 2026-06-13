@@ -1,7 +1,7 @@
 # backend/models.py
 from sqlalchemy import Column, Integer, String, Text, Float, DateTime, ForeignKey, JSON, Boolean, Enum
 from sqlalchemy.orm import relationship
-from database import Base
+from backend.database import Base
 from datetime import datetime
 import enum
 
