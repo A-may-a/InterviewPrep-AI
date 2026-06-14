@@ -10,6 +10,8 @@ import Dashboard from './pages/Dashboard';
 import QuizPage from './pages/QuizPage';
 import DSAPage from './pages/DSAPage';
 import InterviewPage from './pages/InterviewPage';
+import ResumePage from './pages/ResumePage';
+
 
 // Protected Route Component
 function ProtectedRoute({ children }) {
@@ -47,6 +49,16 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       />
+
+      <Route
+       path="/resume"
+       element={
+        <ProtectedRoute>
+      <ResumePage />
+    </ProtectedRoute>
+      }
+     />
+
       <Route
         path="/dsa"
         element={

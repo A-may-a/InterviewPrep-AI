@@ -78,7 +78,7 @@ export const quizAPI = {
     api.get(`/quiz/aptitude/test/${testId}`),
 
   submitAptitudeQuiz: (answers) =>
-    api.post("/quizzes/aptitude/submit", answers),
+    api.post("/quiz/aptitude/submit", answers),
 };
 
 // ================= DSA =================
@@ -93,17 +93,19 @@ export const dsaAPI = {
 };
 
 // ================= RESUME =================
+// ================= RESUME =================
 export const resumeAPI = {
   upload: (file) => {
     const formData = new FormData();
     formData.append("file", file);
-
     return api.post("/resume/upload", formData, {
       headers: {
         "Content-Type": "multipart/form-data",
       },
     });
   },
+
+  getLatestResume: () => api.get("/resume/latest"),
 
   getAnalysis: () => api.get("/resume/analysis"),
 };

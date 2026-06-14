@@ -211,6 +211,9 @@ export default function Dashboard() {
           >
             📄 Upload Resume
           </button>
+
+          
+
           <button
             onClick={() => navigate('/interview')}
             style={{

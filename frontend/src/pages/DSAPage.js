@@ -1,17 +1,25 @@
 // frontend/src/pages/DSAPage.js
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { dsaAPI } from '../api';
-import { ChevronRight, Copy, Check } from 'lucide-react';
+import { Copy, Check, ChevronDown, ChevronUp, BookOpen } from 'lucide-react';
 
 export default function DSAPage() {
+  const navigate = useNavigate();
   const [problems, setProblems] = useState([]);
   const [selectedProblem, setSelectedProblem] = useState(null);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('');
+  const [topicFilter, setTopicFilter] = useState('');
+  const [difficultyFilter, setDifficultyFilter] = useState('');
   const [copied, setCopied] = useState(false);
+  const [expandedSolution, setExpandedSolution] = useState(false);
+
+  const topics = ['Arrays', 'Strings', 'Trees', 'Graphs', 'Dynamic Programming', 'Sorting', 'Searching'];
+  const difficulties = ['easy', 'medium', 'hard'];
 
   useEffect(() => {
-    dsaAPI.getProblems(null, null, 20)
+    dsaAPI.getProblems(topicFilter || null, difficultyFilter || null, 100)
       .then(res => {
         setProblems(res.data);
         if (res.data.length > 0) {
@@ -23,7 +31,7 @@ export default function DSAPage() {
         console.error(err);
         setLoading(false);
       });
-  }, []);
+  }, [topicFilter, difficultyFilter]);
 
   if (loading) {
     return <div style={{ textAlign: 'center', padding: '40px' }}>Loading problems...</div>;
@@ -40,90 +48,196 @@ export default function DSAPage() {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  return (
-    <div style={{ minHeight: '100vh', background: '#f5f7fa', padding: '40px 20px' }}>
-      <div style={{
-        maxWidth: '1200px',
-        margin: '0 auto',
-        display: 'grid',
-        gridTemplateColumns: '300px 1fr',
-        gap: '30px'
-      }}>
-        {/* Sidebar */}
-        <div>
-          <div style={{
-            background: 'white',
-            borderRadius: '12px',
-            padding: '20px',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.05)'
-          }}>
-            <h2 style={{
-              fontSize: '16px',
-              fontWeight: '700',
-              marginBottom: '16px',
-              color: '#333'
-            }}>Problems</h2>
+  const getDifficultyColor = (difficulty) => {
+    if (difficulty === 'easy') return '#00c853';
+    if (difficulty === 'medium') return '#ff9800';
+    return '#f44336';
+  };
 
+  return (
+    <div style={{ minHeight: '100vh', background: '#f5f7fa' }}>
+      {/* Header */}
+      <div style={{
+        background: 'white',
+        borderBottom: '1px solid #eee',
+        padding: '20px 40px',
+        boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
+      }}>
+        <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+          <h1 style={{
+            fontSize: '28px',
+            fontWeight: '700',
+            margin: '0 0 20px 0',
+            color: '#333',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px'
+          }}>
+            <BookOpen size={32} style={{ color: '#667eea' }} />
+            DSA Problem Bank
+          </h1>
+
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: '1fr 1fr 1fr 1fr',
+            gap: '12px'
+          }}>
             <input
               type="text"
-              placeholder="Search..."
+              placeholder="Search problems..."
               value={filter}
               onChange={(e) => setFilter(e.target.value)}
               style={{
-                width: '100%',
                 padding: '10px',
                 border: '1px solid #ddd',
                 borderRadius: '6px',
-                marginBottom: '16px',
-                fontSize: '14px',
-                boxSizing: 'border-box'
+                fontSize: '14px'
               }}
             />
 
-            <div style={{ maxHeight: '600px', overflowY: 'auto' }}>
-              {filteredProblems.map(problem => (
-                <div
-                  key={problem.id}
-                  onClick={() => setSelectedProblem(problem)}
-                  style={{
-                    padding: '12px',
-                    background: selectedProblem?.id === problem.id ? '#f0f4ff' : '#fafafa',
-                    border: `1px solid ${selectedProblem?.id === problem.id ? '#667eea' : '#eee'}`,
-                    borderRadius: '6px',
-                    cursor: 'pointer',
-                    marginBottom: '8px',
-                    transition: 'all 0.2s'
-                  }}
-                >
-                  <p style={{
-                    fontSize: '13px',
-                    fontWeight: '600',
-                    margin: 0,
-                    color: selectedProblem?.id === problem.id ? '#667eea' : '#333'
-                  }}>
-                    {problem.title}
-                  </p>
-                  <p style={{
-                    fontSize: '11px',
-                    color: '#999',
-                    margin: '4px 0 0 0'
-                  }}>
-                    {problem.topic} • {problem.difficulty}
-                  </p>
-                </div>
+            <select
+              value={topicFilter}
+              onChange={(e) => setTopicFilter(e.target.value)}
+              style={{
+                padding: '10px',
+                border: '1px solid #ddd',
+                borderRadius: '6px',
+                fontSize: '14px',
+                background: '#fff'
+              }}
+            >
+              <option value="">All Topics</option>
+              {topics.map(t => (
+                <option key={t} value={t}>{t}</option>
               ))}
-            </div>
+            </select>
+
+            <select
+              value={difficultyFilter}
+              onChange={(e) => setDifficultyFilter(e.target.value)}
+              style={{
+                padding: '10px',
+                border: '1px solid #ddd',
+                borderRadius: '6px',
+                fontSize: '14px',
+                background: '#fff'
+              }}
+            >
+              <option value="">All Levels</option>
+              {difficulties.map(d => (
+                <option key={d} value={d} style={{ textTransform: 'capitalize' }}>
+                  {d.charAt(0).toUpperCase() + d.slice(1)}
+                </option>
+              ))}
+            </select>
+
+            <button
+              onClick={() => navigate('/dashboard')}
+              style={{
+                padding: '10px 20px',
+                background: '#f0f0f0',
+                border: '1px solid #ddd',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontSize: '14px',
+                fontWeight: '600'
+              }}
+            >
+              ← Back
+            </button>
           </div>
         </div>
+      </div>
 
-        {/* Main Content */}
-        {selectedProblem && (
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: '300px 1fr',
+        gap: '30px',
+        padding: '40px',
+        maxWidth: '1400px',
+        margin: '0 auto'
+      }}>
+        {/* Sidebar - Problem List */}
+        <div style={{
+          background: 'white',
+          borderRadius: '12px',
+          padding: '20px',
+          height: 'fit-content',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
+          maxHeight: '80vh',
+          overflowY: 'auto'
+        }}>
+          <h3 style={{
+            fontSize: '16px',
+            fontWeight: '700',
+            marginBottom: '16px',
+            color: '#333'
+          }}>
+            Problems ({filteredProblems.length})
+          </h3>
+
+          {filteredProblems.length === 0 ? (
+            <p style={{ color: '#999', fontSize: '14px' }}>No problems found</p>
+          ) : (
+            filteredProblems.map(problem => (
+              <div
+                key={problem.id}
+                onClick={() => setSelectedProblem(problem)}
+                style={{
+                  padding: '12px',
+                  background: selectedProblem?.id === problem.id ? '#f0f4ff' : '#fafafa',
+                  border: `1px solid ${selectedProblem?.id === problem.id ? '#667eea' : '#eee'}`,
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  marginBottom: '8px',
+                  transition: 'all 0.2s'
+                }}
+              >
+                <p style={{
+                  fontSize: '13px',
+                  fontWeight: '600',
+                  margin: 0,
+                  color: selectedProblem?.id === problem.id ? '#667eea' : '#333',
+                  marginBottom: '4px'
+                }}>
+                  {problem.title}
+                </p>
+                <div style={{
+                  display: 'flex',
+                  gap: '8px',
+                  fontSize: '11px'
+                }}>
+                  <span style={{
+                    background: '#f0f0f0',
+                    padding: '2px 6px',
+                    borderRadius: '3px',
+                    color: '#666'
+                  }}>
+                    {problem.topic}
+                  </span>
+                  <span style={{
+                    background: '#f0f0f0',
+                    padding: '2px 6px',
+                    borderRadius: '3px',
+                    color: getDifficultyColor(problem.difficulty)
+                  }}>
+                    {problem.difficulty}
+                  </span>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
+        {/* Main Content - Problem Details */}
+        {selectedProblem ? (
           <div style={{
             background: 'white',
             borderRadius: '12px',
             padding: '32px',
             boxShadow: '0 2px 8px rgba(0,0,0,0.05)'
           }}>
+            {/* Title & Badges */}
             <div style={{ marginBottom: '24px' }}>
               <div style={{
                 display: 'flex',
@@ -139,10 +253,7 @@ export default function DSAPage() {
                 }}>
                   {selectedProblem.title}
                 </h1>
-                <div style={{
-                  display: 'flex',
-                  gap: '8px'
-                }}>
+                <div style={{ display: 'flex', gap: '8px' }}>
                   <span style={{
                     background: '#f0f4ff',
                     color: '#667eea',
@@ -154,24 +265,21 @@ export default function DSAPage() {
                     {selectedProblem.topic}
                   </span>
                   <span style={{
-                    background: selectedProblem.difficulty === 'easy' ? '#eaffea' : 
-                             selectedProblem.difficulty === 'medium' ? '#fff3f0' : '#ffe0e0',
-                    color: selectedProblem.difficulty === 'easy' ? '#00c853' :
-                           selectedProblem.difficulty === 'medium' ? '#f44336' : '#d32f2f',
+                    background: getDifficultyColor(selectedProblem.difficulty) + '20',
+                    color: getDifficultyColor(selectedProblem.difficulty),
                     padding: '6px 12px',
                     borderRadius: '4px',
                     fontSize: '12px',
-                    fontWeight: '600'
+                    fontWeight: '600',
+                    textTransform: 'uppercase'
                   }}>
-                    {selectedProblem.difficulty.toUpperCase()}
+                    {selectedProblem.difficulty}
                   </span>
                 </div>
               </div>
-              <p style={{ color: '#666', margin: 0, fontSize: '14px' }}>
-                {selectedProblem.topic} • Difficulty: {selectedProblem.difficulty}
-              </p>
             </div>
 
+            {/* Description */}
             <div style={{
               borderTop: '1px solid #eee',
               paddingTop: '24px',
@@ -182,7 +290,9 @@ export default function DSAPage() {
                 fontWeight: '700',
                 marginBottom: '12px',
                 color: '#333'
-              }}>Problem Statement</h3>
+              }}>
+                📝 Problem Statement
+              </h3>
               <p style={{
                 color: '#555',
                 lineHeight: '1.6',
@@ -192,6 +302,26 @@ export default function DSAPage() {
               </p>
             </div>
 
+            {/* Description */}
+            {selectedProblem.description && (
+              <div style={{
+                background: '#f9f9f9',
+                padding: '16px',
+                borderRadius: '8px',
+                marginBottom: '24px'
+              }}>
+                <p style={{
+                  color: '#666',
+                  lineHeight: '1.6',
+                  fontSize: '14px',
+                  margin: 0
+                }}>
+                  {selectedProblem.description}
+                </p>
+              </div>
+            )}
+
+            {/* Examples */}
             {selectedProblem.examples && selectedProblem.examples.length > 0 && (
               <div style={{
                 borderTop: '1px solid #eee',
@@ -203,25 +333,27 @@ export default function DSAPage() {
                   fontWeight: '700',
                   marginBottom: '12px',
                   color: '#333'
-                }}>Examples</h3>
+                }}>
+                  📋 Examples
+                </h3>
                 {selectedProblem.examples.map((ex, idx) => (
                   <div key={idx} style={{
                     background: '#f9f9f9',
                     padding: '12px',
                     borderRadius: '6px',
-                    marginBottom: '8px',
+                    marginBottom: '12px',
                     fontSize: '13px',
                     fontFamily: 'monospace'
                   }}>
-                    <p style={{ margin: 0, fontWeight: '600', color: '#333' }}>Input:</p>
-                    <p style={{ margin: '4px 0 0 0', color: '#666' }}>{ex.input}</p>
-                    <p style={{ margin: '8px 0 0 0', fontWeight: '600', color: '#333' }}>Output:</p>
-                    <p style={{ margin: '4px 0 0 0', color: '#666' }}>{ex.output}</p>
+                    <p style={{ margin: 0, fontWeight: '600', color: '#333' }}>Example {idx + 1}:</p>
+                    <p style={{ margin: '4px 0', color: '#666' }}>Input: {ex.input}</p>
+                    <p style={{ margin: '4px 0', color: '#00c853' }}>Output: {ex.output}</p>
                   </div>
                 ))}
               </div>
             )}
 
+            {/* Constraints */}
             {selectedProblem.constraints && (
               <div style={{
                 borderTop: '1px solid #eee',
@@ -233,23 +365,27 @@ export default function DSAPage() {
                   fontWeight: '700',
                   marginBottom: '12px',
                   color: '#333'
-                }}>Constraints</h3>
-                <p style={{
-                  color: '#555',
-                  lineHeight: '1.6',
-                  fontSize: '14px',
+                }}>
+                  ⚠️ Constraints
+                </h3>
+                <pre style={{
+                  background: '#f9f9f9',
+                  padding: '12px',
+                  borderRadius: '6px',
+                  fontSize: '13px',
+                  color: '#666',
                   whiteSpace: 'pre-wrap',
-                  fontFamily: 'monospace'
+                  margin: 0
                 }}>
                   {selectedProblem.constraints}
-                </p>
+                </pre>
               </div>
             )}
 
+            {/* Solution */}
             <div style={{
               borderTop: '1px solid #eee',
-              paddingTop: '24px',
-              marginBottom: '24px'
+              paddingTop: '24px'
             }}>
               <div style={{
                 display: 'flex',
@@ -261,8 +397,16 @@ export default function DSAPage() {
                   fontSize: '16px',
                   fontWeight: '700',
                   margin: 0,
-                  color: '#333'
-                }}>Solution</h3>
+                  color: '#333',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}
+                onClick={() => setExpandedSolution(!expandedSolution)}>
+                  💡 Solution
+                  {expandedSolution ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+                </h3>
                 <button
                   onClick={() => copyToClipboard(selectedProblem.solution)}
                   style={{
@@ -283,63 +427,128 @@ export default function DSAPage() {
                   {copied ? 'Copied' : 'Copy'}
                 </button>
               </div>
-              <pre style={{
-                background: '#1e1e1e',
-                color: '#d4d4d4',
-                padding: '16px',
-                borderRadius: '6px',
-                overflow: 'auto',
-                fontSize: '12px',
-                fontFamily: 'monospace'
-              }}>
-                {selectedProblem.solution}
-              </pre>
+
+              {expandedSolution && (
+                <>
+                  <pre style={{
+                    background: '#1e1e1e',
+                    color: '#d4d4d4',
+                    padding: '16px',
+                    borderRadius: '6px',
+                    overflow: 'auto',
+                    fontSize: '12px',
+                    fontFamily: 'monospace',
+                    marginBottom: '16px'
+                  }}>
+                    {selectedProblem.solution}
+                  </pre>
+
+                  {selectedProblem.solution_explanation && (
+                    <div style={{
+                      background: '#f0f4ff',
+                      padding: '16px',
+                      borderRadius: '6px',
+                      marginBottom: '16px'
+                    }}>
+                      <p style={{
+                        color: '#333',
+                        fontSize: '14px',
+                        lineHeight: '1.6',
+                        margin: 0
+                      }}>
+                        <strong>Explanation:</strong> {selectedProblem.solution_explanation}
+                      </p>
+                    </div>
+                  )}
+                </>
+              )}
             </div>
 
-            {selectedProblem.time_complexity && (
+            {/* Complexity */}
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: '1fr 1fr',
+              gap: '16px',
+              marginTop: '24px',
+              paddingTop: '24px',
+              borderTop: '1px solid #eee'
+            }}>
               <div style={{
-                display: 'grid',
-                gridTemplateColumns: '1fr 1fr',
-                gap: '16px',
-                borderTop: '1px solid #eee',
-                paddingTop: '24px'
+                background: '#f9f9f9',
+                padding: '16px',
+                borderRadius: '8px'
               }}>
-                <div>
-                  <p style={{
-                    fontSize: '12px',
-                    color: '#666',
-                    margin: 0,
-                    fontWeight: '600'
-                  }}>Time Complexity</p>
-                  <p style={{
-                    fontSize: '16px',
-                    fontWeight: '700',
-                    margin: '4px 0 0 0',
-                    color: '#667eea',
-                    fontFamily: 'monospace'
-                  }}>
-                    {selectedProblem.time_complexity}
-                  </p>
-                </div>
-                <div>
-                  <p style={{
-                    fontSize: '12px',
-                    color: '#666',
-                    margin: 0,
-                    fontWeight: '600'
-                  }}>Space Complexity</p>
-                  <p style={{
-                    fontSize: '16px',
-                    fontWeight: '700',
-                    margin: '4px 0 0 0',
-                    color: '#f44336',
-                    fontFamily: 'monospace'
-                  }}>
-                    {selectedProblem.space_complexity}
-                  </p>
-                </div>
+                <p style={{
+                  fontSize: '12px',
+                  color: '#666',
+                  margin: 0,
+                  fontWeight: '600'
+                }}>
+                  ⏱️ Time Complexity
+                </p>
+                <p style={{
+                  fontSize: '16px',
+                  fontWeight: '700',
+                  margin: '4px 0 0 0',
+                  color: '#667eea',
+                  fontFamily: 'monospace'
+                }}>
+                  {selectedProblem.time_complexity}
+                </p>
               </div>
-            )}
+              <div style={{
+                background: '#f9f9f9',
+                padding: '16px',
+                borderRadius: '8px'
+              }}>
+                <p style={{
+                  fontSize: '12px',
+                  color: '#666',
+                  margin: 0,
+                  fontWeight: '600'
+                }}>
+                  💾 Space Complexity
+                </p>
+                <p style={{
+                  fontSize: '16px',
+                  fontWeight: '700',
+                  margin: '4px 0 0 0',
+                  color: '#f44336',
+                  fontFamily: 'monospace'
+                }}>
+                  {selectedProblem.space_complexity}
+                </p>
+              </div>
+            </div>
+
+            {/* Action Button */}
+            <button
+              onClick={() => dsaAPI.practiceProblem(selectedProblem.id).then(() => alert('Problem marked as practiced!'))}
+              style={{
+                width: '100%',
+                marginTop: '24px',
+                padding: '12px',
+                background: 'linear-gradient(135deg, #00c853 0%, #00a83f 100%)',
+                color: 'white',
+                border: 'none',
+                borderRadius: '8px',
+                fontSize: '16px',
+                fontWeight: '600',
+                cursor: 'pointer'
+              }}
+            >
+              ✅ Mark as Practiced
+            </button>
+          </div>
+        ) : (
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            minHeight: '400px',
+            color: '#999'
+          }}>
+            Select a problem to view details
           </div>
         )}
       </div>
