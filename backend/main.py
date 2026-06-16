@@ -170,25 +170,86 @@ def get_questions(
         for q in questions
     ]
 
-
-@app.post("/quiz/submit")
-def submit_quiz(
-    submission: dict,
-    current_user: User = Depends(get_current_user_from_db),
+@app.post("/quiz/aptitude/submit")
+def submit_aptitude_quiz(
+    quiz_data: dict,
+    current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Submit quiz answers and calculate score"""
-    answers = submission.get("answers", {})
-    score = 0
-    total = len(answers)
+    """Submit aptitude quiz answers and return detailed results"""
+    correct_count = 0
+    total = len(quiz_data)
+    detailed_results = []
 
-    for q_id_str, answer in answers.items():
-        q_id = int(q_id_str)
-        question = db.query(AptitudeQuestion).filter(AptitudeQuestion.id == q_id).first()
-        if question and question.correct_answer == answer:
-            score += 1
+    for question_id, user_answer in quiz_data.items():
+        question = db.query(AptitudeQuestion).filter(
+            AptitudeQuestion.id == int(question_id)
+        ).first()
 
-    percentage = round((score / total) * 100, 2) if total > 0 else 0
+        if question:
+            is_correct = question.correct_answer == user_answer
+            if is_correct:
+                correct_count += 1
+
+            detailed_results.append({
+                "question_id": question.id,
+                "question_text": question.text,
+                "user_answer": user_answer,
+                "correct_answer": question.correct_answer,
+                "is_correct": is_correct,
+                "explanation": question.explanation,
+                "options": question.options
+            })
+
+    score = (correct_count / total * 100) if total > 0 else 0
+
+    # Save quiz session
+    session = QuizSession(
+        user_id=current_user["user_id"],
+        quiz_type="aptitude",
+        total_questions=total,
+        correct_answers=correct_count,
+        score=score,
+        answers=quiz_data
+    )
+    db.add(session)
+
+    # Update progress
+    progress = db.query(Progress).filter(
+        Progress.user_id == current_user["user_id"],
+        Progress.topic == "Aptitude"
+    ).first()
+
+    if progress:
+        progress.questions_practiced += total
+        progress.correct_answers += correct_count
+        avg = (progress.correct_answers / progress.questions_practiced * 100)
+        progress.average_score = avg
+        progress.last_practiced = datetime.utcnow()
+    else:
+        progress = Progress(
+            user_id=current_user["user_id"],
+            topic="Aptitude",
+            questions_practiced=total,
+            correct_answers=correct_count,
+            average_score=score,
+            last_practiced=datetime.utcnow()
+        )
+        db.add(progress)
+
+    db.commit()
+    db.refresh(session)
+
+    return {
+        "session_id": session.id,
+        "score": round(score, 1),
+        "correct_answers": correct_count,
+        "total_questions": total,
+        "percentage": round(score, 1),
+        "grade": "Excellent" if score >= 80 else "Good" if score >= 60 else "Average" if score >= 40 else "Needs Practice",
+        "detailed_results": detailed_results,
+        "created_at": session.created_at.isoformat()
+    }
 
     # Save session
     session = QuizSession(
