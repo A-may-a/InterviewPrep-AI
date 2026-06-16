@@ -1,10 +1,10 @@
 // frontend/src/api.js
 import axios from "axios";
 
-const API_BASE = process.env.REACT_APP_API_URL || "http://localhost:8000";
+const API_BASE = process.env.REACT_APP_API_URL || "https://interviewprep-ai-zt3f.onrender.com/";
 
 const api = axios.create({
-  baseURL: API_BASE,
+  baseURL: process.env.REACT_APP_API_URL
 });
 
 // Add JWT token automatically
