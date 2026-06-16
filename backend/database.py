@@ -16,8 +16,17 @@ DB_HOST = os.getenv("DB_HOST", "localhost")
 DB_NAME = os.getenv("DB_NAME", "interview_prep_db")
 DB_PORT = os.getenv("DB_PORT", "3306")
 
-DATABASE_URL = f"mysql+mysqlconnector://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+import os
 
+DATABASE_URL = (
+    f"mysql+pymysql://"
+    f"{os.getenv('MYSQL_USER')}:"
+    f"{os.getenv('MYSQL_PASSWORD')}@"
+    f"{os.getenv('MYSQL_HOST')}:"
+    f"{os.getenv('MYSQL_PORT')}/"
+    f"{os.getenv('MYSQL_DATABASE')}"
+)
+print(DATABASE_URL) #temporary check
 engine = create_engine(
     DATABASE_URL,
     pool_pre_ping=True,

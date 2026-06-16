@@ -37,13 +37,17 @@ Base.metadata.create_all(bind=engine)
 # FastAPI app
 app = FastAPI(title="Interview Prep Platform API", version="1.0.0")
 
-# CORS
+# CORS(used for deployment)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "http://localhost:3000",
+        "https://interviewprep.com"
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    
 )
 
 security = HTTPBearer()
