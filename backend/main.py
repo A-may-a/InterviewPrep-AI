@@ -353,11 +353,13 @@ def get_aptitude_test(test_id: int, db: Session = Depends(get_db)):
     }
 
 # ==================== DSA ROUTES ====================
+
+
 @app.get("/dsa")
 def get_dsa_problems(
-    topic: Optional[str] = None,
-    difficulty: Optional[str] = None,
-    limit: Optional[int] = None,
+    topic: str = None,
+    difficulty: str = None,
+    limit: int = 100,
     db: Session = Depends(get_db)
 ):
     """Get DSA problems with optional filters"""
@@ -367,10 +369,9 @@ def get_dsa_problems(
         query = query.filter(DSAProblem.topic == topic)
     if difficulty:
         query = query.filter(DSAProblem.difficulty == difficulty)
-    if limit:
-        query = query.limit(limit)
 
-    problems = query.all()
+    problems = query.limit(limit).all()
+
     return [
         {
             "id": p.id,
@@ -380,21 +381,67 @@ def get_dsa_problems(
             "topic": p.topic,
             "difficulty": p.difficulty,
             "examples": p.examples,
-            "constraints": p.constraints,
-            "time_complexity": p.time_complexity,
-            "space_complexity": p.space_complexity,
             "solution": p.solution,
             "solution_explanation": p.solution_explanation,
-            "created_at": p.created_at
+            "constraints": p.constraints,
+            "time_complexity": p.time_complexity,
+            "space_complexity": p.space_complexity
         }
         for p in problems
     ]
 
 
-@app.get("/dsa/{problem_id}")
-def get_dsa_problem(problem_id: int, db: Session = Depends(get_db)):
-    """Get a specific DSA problem with solution"""
+#
+@app.post("/dsa/problems/{problem_id}/practice")
+def practice_dsa_problem(
+    problem_id: int,
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Mark a DSA problem as practiced"""
     problem = db.query(DSAProblem).filter(DSAProblem.id == problem_id).first()
+
+    if not problem:
+        raise HTTPException(status_code=404, detail="Problem not found")
+
+    # Update or create progress
+    progress = db.query(Progress).filter(
+        Progress.user_id == current_user["user_id"],
+        Progress.topic == problem.topic
+    ).first()
+
+    if progress:
+        progress.questions_practiced += 1
+        progress.last_practiced = datetime.utcnow()
+    else:
+        progress = Progress(
+            user_id=current_user["user_id"],
+            topic=problem.topic,
+            questions_practiced=1,
+            correct_answers=0,
+            average_score=0,
+            last_practiced=datetime.utcnow()
+        )
+        db.add(progress)
+
+    db.commit()
+
+    return {
+        "success": True,
+        "message": f"✅ '{problem.title}' marked as practiced!",
+        "topic": problem.topic,
+        "questions_practiced": progress.questions_practiced
+    }
+
+
+@app.get("/dsa/problems/{problem_id}")
+def get_dsa_problem(
+    problem_id: int,
+    db: Session = Depends(get_db)
+):
+    """Get a specific DSA problem by ID"""
+    problem = db.query(DSAProblem).filter(DSAProblem.id == problem_id).first()
+
     if not problem:
         raise HTTPException(status_code=404, detail="Problem not found")
 

@@ -90,6 +90,9 @@ export const dsaAPI = {
 
   getProblem: (problemId) =>
     api.get(`/dsa/${problemId}`),
+
+  practiceProblem: (problemId) =>
+    api.post(`/dsa/problems/${problemId}/practice`),
 };
 
 // ================= RESUME =================
