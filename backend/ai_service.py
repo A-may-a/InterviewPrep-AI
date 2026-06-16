@@ -16,7 +16,7 @@ class AIService:
         try:
             import google.generativeai as genai
             genai.configure(api_key=GEMINI_API_KEY)
-            model = genai.GenerativeModel('gemini-1.5-flash')
+            model = genai.GenerativeModel('gemini-3.5-flash')
 
             prompt = f"""
 You are an expert resume reviewer. Analyze the following resume and return ONLY a valid JSON object.
@@ -76,7 +76,7 @@ Return this exact JSON structure (no markdown, no backticks, just raw JSON):
         try:
             import google.generativeai as genai
             genai.configure(api_key=GEMINI_API_KEY)
-            model = genai.GenerativeModel('gemini-1.5-flash')
+            model = genai.GenerativeModel('gemini-3.5-flash')
 
             prompt = f"""
 Generate exactly {num_questions} interview questions for a {role} position.
@@ -123,7 +123,7 @@ Include:
         try:
             import google.generativeai as genai
             genai.configure(api_key=GEMINI_API_KEY)
-            model = genai.GenerativeModel('gemini-1.5-flash')
+            model = genai.GenerativeModel('gemini-3.5-flash')
 
             system_prompt = f"""You are an experienced senior interviewer conducting a {role} technical interview.
 Rules:
@@ -165,7 +165,7 @@ Rules:
         try:
             import google.generativeai as genai
             genai.configure(api_key=GEMINI_API_KEY)
-            model = genai.GenerativeModel('gemini-1.5-flash')
+            model = genai.GenerativeModel('gemini-3.5-flash')
 
             conversation = "\n".join([
                 f"{'Candidate' if m['role'] == 'user' else 'Interviewer'}: {m['content']}"
