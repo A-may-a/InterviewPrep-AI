@@ -40,7 +40,7 @@ app = FastAPI(title="Interview Prep Platform API", version="1.0.0")
 # CORS(used for deployment)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[S"*"],
+    allow_origins=["*"],
     allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],   
