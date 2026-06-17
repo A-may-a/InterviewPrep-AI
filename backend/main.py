@@ -40,7 +40,10 @@ app = FastAPI(title="Interview Prep Platform API", version="1.0.0")
 # CORS(used for deployment)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://interviewprep-8ker.onrender.com"],
+    allow_origins=[
+    "https://interviewprep-8ker.onrender.com",
+    "http://localhost:3000"
+],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],   
