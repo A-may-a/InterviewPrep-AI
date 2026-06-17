@@ -71,6 +71,28 @@ async def get_current_user_from_db(
     return user
 
 
+
+
+
+#db-test temporary==========================================
+
+
+from sqlalchemy import text
+from backend.database import engine
+
+
+@app.get("/db-test")
+def db_test():
+    try:
+        with engine.connect() as conn:
+            conn.execute(text("SELECT 1"))
+            return {"status": "connected"}
+    except Exception as e:
+        return {"error": str(e)}
+    
+    #=======================================================
+
+    
 # ==================== AUTH ROUTES ====================
 @app.post("/auth/register")
 def register(user_data: UserRegister, db: Session = Depends(get_db)):
