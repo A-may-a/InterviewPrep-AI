@@ -1,6 +1,6 @@
 # backend/dsa_seed.py
-from database import SessionLocal
-from models import DSAProblem
+from backend.database import SessionLocal
+from backend.models import DSAProblem
 
 db = SessionLocal()
 

@@ -59,13 +59,13 @@ export const quizAPI = {
     }),
 
   submitQuiz: (answers) =>
-    api.post("/quiz/submit", {
+    api.post("/quiz/aptitude/submit", {
       answers,
     }),
 
   // Alias for backward compatibility
   submitAptitudeQuiz: (answers) =>
-    api.post("/quiz/submit", {
+    api.post("/quiz/aptitude/submit", {
       answers,
     }),
 

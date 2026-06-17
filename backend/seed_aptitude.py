@@ -1,9 +1,9 @@
 import pandas as pd
 
-from database import SessionLocal
-from models import AptitudeQuestion
+from backend.database import SessionLocal
+from backend.models import AptitudeQuestion
 
-CSV_FILE = "../data/aptitude_questions.csv"
+CSV_FILE = "data/aptitude_questions.csv"
 
 def seed_questions():
     db = SessionLocal()
