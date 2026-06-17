@@ -1,7 +1,7 @@
 // frontend/src/api.js
 import axios from "axios";
 
-const API_BASE = process.env.REACT_APP_API_URL || "https://interviewprep-ai-zt3f.onrender.com/";
+const API_BASE = process.env.REACT_APP_API_URL || "https://interviewprep-ai-b.onrender.com";
 
 const api = axios.create({
   baseURL: process.env.REACT_APP_API_URL
