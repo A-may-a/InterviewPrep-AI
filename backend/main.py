@@ -40,14 +40,15 @@ app = FastAPI(title="Interview Prep Platform API", version="1.0.0")
 # CORS(used for deployment)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "https://interviewprep-8ker.onrender.com"
-    ],
-    allow_credentials=True,
+    allow_origins=[S"*"],
+    allow_credentials=False,
     allow_methods=["*"],
-    allow_headers=["*"],
-    
+    allow_headers=["*"],   
 )
+
+@app.options("/{path:path}")  #test
+async def options_handler(path: str):
+    return {}
 
 security = HTTPBearer()
 
