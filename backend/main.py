@@ -31,6 +31,8 @@ from backend.auth import (
 )
 from backend.ai_service import AIService
 
+
+
 # Create tables
 Base.metadata.create_all(bind=engine)
 
@@ -77,22 +79,12 @@ async def get_current_user_from_db(
 #db-test temporary==========================================
 
 
-from sqlalchemy import text
-from backend.database import engine
 
 
-@app.get("/db-test")
-def db_test():
-    try:
-        with engine.connect() as conn:
-            conn.execute(text("SELECT 1"))
-            return {"status": "connected"}
-    except Exception as e:
-        return {"error": str(e)}
-    
-    #=======================================================
 
-    
+
+
+
 # ==================== AUTH ROUTES ====================
 @app.post("/auth/register")
 def register(user_data: UserRegister, db: Session = Depends(get_db)):
@@ -162,8 +154,8 @@ def get_me(current_user: User = Depends(get_current_user_from_db)):
         "created_at": current_user.created_at
     }
 
-
 # ==================== APTITUDE QUIZ ROUTES ====================
+
 @app.get("/questions")
 def get_questions(
     category: Optional[str] = None,
@@ -182,7 +174,6 @@ def get_questions(
         query = query.limit(limit)
 
     questions = query.all()
-    # Return without correct_answer for quiz taking
     return [
         {
             "id": q.id,
@@ -196,6 +187,58 @@ def get_questions(
         for q in questions
     ]
 
+
+@app.get("/quiz/aptitude/tests")
+def get_available_tests(db: Session = Depends(get_db)):
+    """Get all available aptitude tests"""
+    total_questions = db.query(AptitudeQuestion).count()
+    questions_per_test = 10
+    num_tests = (total_questions + questions_per_test - 1) // questions_per_test
+
+    tests = []
+    for i in range(1, num_tests + 1):
+        start_idx = (i - 1) * questions_per_test
+        count = db.query(AptitudeQuestion).offset(start_idx).limit(questions_per_test).count()
+        tests.append({
+            "test_id": i,
+            "test_name": f"Aptitude Test {i}",
+            "total_questions": count,
+            "duration_minutes": 10,
+            "questions_per_test": count
+        })
+
+    return tests
+
+
+@app.get("/quiz/aptitude/test/{test_id}")
+def get_aptitude_test(test_id: int, db: Session = Depends(get_db)):
+    """Get specific aptitude test questions"""
+    questions_per_test = 10
+    start_idx = (test_id - 1) * questions_per_test
+
+    questions = db.query(AptitudeQuestion).offset(start_idx).limit(questions_per_test).all()
+
+    if not questions:
+        raise HTTPException(status_code=404, detail="Test not found")
+
+    return {
+        "test_id": test_id,
+        "test_name": f"Aptitude Test {test_id}",
+        "duration_minutes": 10,
+        "total_questions": len(questions),
+        "questions": [
+            {
+                "id": q.id,
+                "text": q.text,
+                "options": q.options,
+                "category": q.category,
+                "difficulty": q.difficulty
+            }
+            for q in questions
+        ]
+    }
+
+
 @app.post("/quiz/aptitude/submit")
 def submit_aptitude_quiz(
     quiz_data: dict,
@@ -203,11 +246,20 @@ def submit_aptitude_quiz(
     db: Session = Depends(get_db)
 ):
     """Submit aptitude quiz answers and return detailed results"""
+
+    # ✅ Handle both formats:
+    # Format 1 (correct): { "8": "C", "9": "A" }
+    # Format 2 (wrong, old):  { "answers": { "8": "C" } }
+    if "answers" in quiz_data and isinstance(quiz_data["answers"], dict):
+        answers = quiz_data["answers"]
+    else:
+        answers = quiz_data
+
     correct_count = 0
-    total = len(quiz_data)
+    total = len(answers)
     detailed_results = []
 
-    for question_id, user_answer in quiz_data.items():
+    for question_id, user_answer in answers.items():
         question = db.query(AptitudeQuestion).filter(
             AptitudeQuestion.id == int(question_id)
         ).first()
@@ -223,7 +275,7 @@ def submit_aptitude_quiz(
                 "user_answer": user_answer,
                 "correct_answer": question.correct_answer,
                 "is_correct": is_correct,
-                "explanation": question.explanation,
+                "explanation": question.explanation or "",
                 "options": question.options
             })
 
@@ -236,7 +288,7 @@ def submit_aptitude_quiz(
         total_questions=total,
         correct_answers=correct_count,
         score=score,
-        answers=quiz_data
+        answers=answers
     )
     db.add(session)
 
@@ -249,8 +301,7 @@ def submit_aptitude_quiz(
     if progress:
         progress.questions_practiced += total
         progress.correct_answers += correct_count
-        avg = (progress.correct_answers / progress.questions_practiced * 100)
-        progress.average_score = avg
+        progress.average_score = (progress.correct_answers / progress.questions_practiced * 100)
         progress.last_practiced = datetime.utcnow()
     else:
         progress = Progress(
@@ -266,47 +317,35 @@ def submit_aptitude_quiz(
     db.commit()
     db.refresh(session)
 
+    if score >= 80:
+        grade = "Excellent 🏆"
+    elif score >= 60:
+        grade = "Good 👍"
+    elif score >= 40:
+        grade = "Average 📚"
+    else:
+        grade = "Needs Practice 💪"
+
     return {
         "session_id": session.id,
         "score": round(score, 1),
         "correct_answers": correct_count,
         "total_questions": total,
         "percentage": round(score, 1),
-        "grade": "Excellent" if score >= 80 else "Good" if score >= 60 else "Average" if score >= 40 else "Needs Practice",
+        "grade": grade,
         "detailed_results": detailed_results,
         "created_at": session.created_at.isoformat()
-    }
-
-    # Save session
-    session = QuizSession(
-        user_id=current_user.id,
-        quiz_type="aptitude",
-        total_questions=total,
-        correct_answers=score,
-        score=percentage,
-        answers=answers
-    )
-    db.add(session)
-    db.commit()
-    db.refresh(session)
-
-    return {
-        "score": percentage,
-        "correct_answers": score,
-        "total_questions": total,
-        "percentage": percentage,
-        "session_id": session.id
     }
 
 
 @app.get("/quiz/history")
 def get_quiz_history(
-    current_user: User = Depends(get_current_user_from_db),
+    current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """Get user's quiz history"""
     sessions = db.query(QuizSession).filter(
-        QuizSession.user_id == current_user.id
+        QuizSession.user_id == current_user["user_id"]
     ).order_by(QuizSession.created_at.desc()).all()
 
     return [
@@ -321,62 +360,6 @@ def get_quiz_history(
         }
         for s in sessions
     ]
-# Add this to backend/main.py after other aptitude endpoints
-
-@app.get("/quiz/aptitude/tests")
-def get_available_tests(db: Session = Depends(get_db)):
-    """Get all available aptitude tests"""
-    total_questions = db.query(AptitudeQuestion).count()
-    questions_per_test = 10
-    num_tests = (total_questions + questions_per_test - 1) // questions_per_test
-    
-    tests = []
-    for i in range(1, num_tests + 1):
-        start_idx = (i - 1) * questions_per_test
-        end_idx = start_idx + questions_per_test
-        
-        test_questions = db.query(AptitudeQuestion).limit(
-            questions_per_test
-        ).offset(start_idx).count()
-        
-        tests.append({
-            "test_id": i,
-            "test_name": f"Aptitude Test {i}",
-            "total_questions": test_questions,
-            "duration_minutes": 10,
-            "questions_per_test": test_questions
-        })
-    
-    return tests
-
-@app.get("/quiz/aptitude/test/{test_id}")
-def get_aptitude_test(test_id: int, db: Session = Depends(get_db)):
-    """Get specific aptitude test questions"""
-    questions_per_test = 10
-    start_idx = (test_id - 1) * questions_per_test
-    
-    questions = db.query(AptitudeQuestion).limit(
-        questions_per_test
-    ).offset(start_idx).all()
-    
-    if not questions:
-        raise HTTPException(status_code=404, detail="Test not found")
-    
-    return {
-        "test_id": test_id,
-        "test_name": f"Aptitude Test {test_id}",
-        "duration_minutes": 10,
-        "total_questions": len(questions),
-        "questions": [
-            {
-                "id": q.id,
-                "text": q.text,
-                "options": q.options,
-                "category": q.category,
-                "difficulty": q.difficulty
-            } for q in questions
-        ]
-    }
 
 # ==================== DSA ROUTES ====================
 
