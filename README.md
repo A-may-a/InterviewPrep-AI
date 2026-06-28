@@ -52,7 +52,7 @@
 - Score tracking and grade analysis
 
 ### 💻 DSA Problem Bank
-- **100+ coding problems** covering all placement topics
+- **80 coding problems** covering all placement topics
 - Topics: Arrays, Strings, Linked Lists, Trees, Graphs, Dynamic Programming, Sorting, Searching, Backtracking, Heap, Matrix, Bit Manipulation, Stack & Queue, Hashing
 - Filter by **topic and difficulty** (Easy / Medium / Hard)
 - Complete solutions with **time & space complexity** analysis
@@ -428,7 +428,7 @@ git push origin feature/AmazingFeature
 - [ ] Resume analysis requires a valid Gemini API key configured on backend
 
 ### Upcoming Features
-- [ ] Video recording for mock interviews
+- [ ] Voice recording for mock interviews
 - [ ] Leaderboard and competitive practice
 - [ ] Email notifications and reminders
 - [ ] Mobile app (React Native)
